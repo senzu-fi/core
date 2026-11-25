@@ -1,0 +1,26 @@
+name = "senzu-formal"
+version = "0.1.0"
+defaultTargets = ["Senzu", "vectors"]
+# Mathlib uses the module system; our files don't need it
+allowNonModules = true
+
+[leanOptions]
+pp.unicode.fun = true
+relaxedAutoImplicit = false
+autoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+weak.linter.style.longLine = false
+weak.linter.style.header = false
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.36.0-rc1"
+
+[[lean_lib]]
+name = "Senzu"
+
+[[lean_exe]]
+name = "vectors"
+root = "Vectors"

@@ -1,0 +1,10 @@
+out/
+cache/
+out-solar/
+cache-solar/
+out-slither/
+cache-slither/
+broadcast/
+crytic-export/
+medusa-corpus/
+.env

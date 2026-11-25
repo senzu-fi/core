@@ -1,0 +1,91 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.9.0
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            out
+            cache
+          key: forge-${{ hashFiles('foundry.toml', 'src/**', 'test/**', 'script/**') }}
+          restore-keys: forge-
+
+      # Forge runs a via-IR solc job per optimizer profile side by side, more than the runner's memory
+      - name: Swap
+        run: |
+          sudo swapoff -a
+          sudo rm -f /mnt/swapfile /swapfile
+          sudo fallocate -l 12G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+
+      - name: Build
+        run: forge build
+
+      - name: Test
+        run: forge test
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Fails on any High finding not reviewed in source
+      - name: Slither
+        env:
+          FOUNDRY_PROFILE: slither
+        run: |
+          pip install slither-analyzer==0.11.6
+          slither .
+
+  formal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: formal
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+
+      - uses: actions/cache@v4
+        with:
+          path: formal/.lake
+          key: lake-${{ hashFiles('formal/lean-toolchain', 'formal/lake-manifest.json') }}
+
+      - name: Mathlib cache
+        run: ~/.elan/bin/lake exe cache get
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Quint
+        run: npm i -g @informalsystems/quint@0.33.1
+
+      # Spec lock, build, axioms, vectors, model mutations, the Quint lock model and its mutations
+      - name: Check
+        run: scripts/check.sh

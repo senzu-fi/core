@@ -1,0 +1,6 @@
+{
+  "filter_paths": "lib/|test/|script/|src/libraries/uniswap/|src/interfaces/external/pyth/",
+  "exclude_informational": true,
+  "exclude_optimization": true,
+  "fail_on": "high"
+}
